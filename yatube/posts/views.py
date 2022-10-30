@@ -14,10 +14,11 @@ CACHE_TIME: int = 3
 @cache_page(CACHE_TIME)
 def index(request):
     """ Обработчик для главной страницы."""
-    items_list = Post.objects.all()
-    page_obj = my_paginator(request, items_list)
     context = {
-        'page_obj': page_obj,
+        'page_obj': my_paginator(
+            request,
+            Post.objects.select_related('group')
+        )
     }
     return render(request, 'posts/index.html', context)
 

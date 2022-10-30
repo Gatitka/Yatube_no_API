@@ -138,7 +138,6 @@ class PostViewsTest(TestCase):
 
     def test_post_index_page_show_correct_context(self):
         """Шаблон posts/index.html сформирован с правильным контекстом."""
-        # time.sleep(CACHE_TIME + 1)
         self.get_response_context_check(
             reverse('posts:index'),
             Post.objects.latest('pub_date'),
@@ -153,7 +152,7 @@ class PostViewsTest(TestCase):
                 'posts:group_list',
                 kwargs={'slug': self.group.slug}
             ),
-            Post.objects.filter(group_id=self.group.id).latest('pub_date'),
+            Post.objects.filter(group_id=self.group.id)[0],
             'page_obj'
         )
         self.assertEqual(
@@ -166,8 +165,7 @@ class PostViewsTest(TestCase):
                 'posts:profile',
                 kwargs={'username': self.post.author}
             ),
-            Post.objects.filter(
-                author_id=self.post.author.id).latest('pub_date'),
+            self.post.author.posts.all()[0],
             'page_obj'
         )
         self.assertEqual(
@@ -277,7 +275,6 @@ class PostViewsTest(TestCase):
                     kwargs={'username':
                             self.simple_user.username}),
         )
-        # time.sleep(CACHE_TIME + 1)
         for request_data in request_data_list:
             with self.subTest(request_data=request_data):
                 response = self.authorized_client.get(request_data)
@@ -294,7 +291,6 @@ class PostViewsTest(TestCase):
                     kwargs={'username':
                             self.simple_user.username}) + '?page=2': 2,
         }
-        # time.sleep(CACHE_TIME + 1)
         for request_data, delay in request_data_list.items():
             with self.subTest(request_data=request_data):
                 response = self.authorized_client.get(request_data)
@@ -314,48 +310,43 @@ class PostViewsTest(TestCase):
     def test_following_unfollowing(self):
         """Проверка profile_follow, profile_unfollow на корректную подписку,
         отписку авторизованным пользователем."""
+        user = PostViewsTest.simple_user.id,
+        author = PostViewsTest.author_user.id
         self.assertFalse(
-            Follow.objects.filter(
-                user=PostViewsTest.simple_user.id,
-                author=PostViewsTest.author_user.id
-            ).exists()
+            Follow.objects.filter(user=user, author=author).exists()
         )
         self.authorized_client.get(
             reverse('posts:profile_follow',
                     kwargs={'username': self.author_user}))
         self.assertTrue(
-            Follow.objects.filter(
-                user=PostViewsTest.simple_user.id,
-                author=PostViewsTest.author_user.id
-            ).exists()
+            Follow.objects.filter(user=user, author=author).exists()
         )
         self.authorized_client.get(
             reverse('posts:profile_unfollow',
                     kwargs={'username': self.author_user}))
         self.assertFalse(
-            Follow.objects.filter(
-                user=PostViewsTest.simple_user.id,
-                author=PostViewsTest.author_user.id
-            ).exists()
+            Follow.objects.filter(user=user, author=author).exists()
         )
 
     def test_new_post_show_in_follow_page_correctly(self):
         """ Проверка follow_index на отображение правильного контекста.
         Новая запись пользователя появляется в ленте тех,
         кто на него подписан и не появляется в ленте тех, кто не подписан."""
-        Follow.objects.create(
+        follow_su_ap = Follow.objects.create(
             user=PostViewsTest.simple_user,
             author=PostViewsTest.author_user
         )
-        # подписки author_user -> simple_user нет
+        # обратной подписки author_user -> simple_user нет
+        author_last_post = follow_su_ap.author.posts.all()[0]
         self.get_response_context_check(
             reverse('posts:follow_index'),
-            Post.objects.filter(author=self.author_user).latest('pub_date'),
+            author_last_post,
             'page_obj',
+
         )
         response = self.author_post.get(
             reverse('posts:follow_index'))
         self.assertNotIn(
-            Post.objects.filter(author=self.author_user).latest('pub_date'),
+            author_last_post,
             response.context['page_obj']
         )
