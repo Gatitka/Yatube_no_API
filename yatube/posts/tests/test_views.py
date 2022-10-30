@@ -38,6 +38,7 @@ class PostViewsTest(TestCase):
             paginator_posts_list.append(new_post)
         Post.objects.bulk_create(paginator_posts_list)
         time.sleep(1)
+
         post_gif = (
             b'\x47\x49\x46\x38\x39\x61\x02\x00'
             b'\x01\x00\x80\x00\x00\x00\x00\x00'
@@ -106,6 +107,7 @@ class PostViewsTest(TestCase):
             reverse('posts:post_edit',
                     kwargs={'post_id': self.post.id}):
                         'posts/create_post.html',
+            reverse('posts:follow_index'): 'posts/follow.html',
         }
         time.sleep(CACHE_TIME + 1)
         for reverse_name, template in templates_pages_names.items():
@@ -207,11 +209,25 @@ class PostViewsTest(TestCase):
     def test_created_post_show_in_urls(self):
         """ Проверка, что созданный пост показывается на страницах
         index, group_list, profile."""
+        post_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x02\x00'
+            b'\x01\x00\x80\x00\x00\x00\x00\x00'
+            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+            b'\x0A\x00\x3B'
+        )
+        uploaded = SimpleUploadedFile(
+            name='post1.gif',
+            content=post_gif,
+            content_type='image/gif'
+        )
         self.authorized_client.post(
             reverse('posts:post_create'),
             data={
                 'text': 'Пост создан через create',
-                'group': PostViewsTest.group.id
+                'group': PostViewsTest.group.id,
+                'image': uploaded,
             }
         )
         request_data_list = (
@@ -261,7 +277,7 @@ class PostViewsTest(TestCase):
                     kwargs={'username':
                             self.simple_user.username}),
         )
-        time.sleep(CACHE_TIME + 1)
+        # time.sleep(CACHE_TIME + 1)
         for request_data in request_data_list:
             with self.subTest(request_data=request_data):
                 response = self.authorized_client.get(request_data)
@@ -278,7 +294,7 @@ class PostViewsTest(TestCase):
                     kwargs={'username':
                             self.simple_user.username}) + '?page=2': 2,
         }
-        time.sleep(CACHE_TIME + 1)
+        # time.sleep(CACHE_TIME + 1)
         for request_data, delay in request_data_list.items():
             with self.subTest(request_data=request_data):
                 response = self.authorized_client.get(request_data)

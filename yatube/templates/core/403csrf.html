@@ -1,4 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
   <h1>Custom CSRF check error. 403</h1>
+  <p>Вы точно залогинились?</p>
+  <a href="{% url 'users:login' %}">Войти</a>
 {% endblock %}

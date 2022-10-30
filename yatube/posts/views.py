@@ -8,7 +8,7 @@ from .models import Comment, Group, Post, User, Follow
 from .utils import my_paginator
 from django.views.decorators.cache import cache_page
 
-CACHE_TIME: int = 2
+CACHE_TIME: int = 3
 
 
 @cache_page(CACHE_TIME)
@@ -152,7 +152,7 @@ def profile_unfollow(request, username):
         user=request.user,
         author=User.objects.get(username=username)
     ).exists()
-    if cond is False:
+    if cond is True:
         unfollow = Follow.objects.get(
             user=request.user,
             author=User.objects.get(username=username),
