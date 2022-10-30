@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Об авторе проекта{% endblock %}
+{% block content %}
+  <div class="container py-5">
+    <h1>Привет, я автор</h1>
+    <p>Времени расписывать о себе нет - дэдлайн и жопа в огне, ну ты понимаешь...</p>
+    <ul>
+      <li>ем</li>
+      <li>пью</li>
+      <li>прожигаю жизнь</li>
+      <li>а грудничек ее вообще жжет напалмом...</li>
+    </ul>
+    <img src="{% static 'img/author.jpeg' %}" width="250">
+    <p>Лучше почитайте <a href="{% url 'posts:group_list' slug='LEO_TOLSTOY' %}">Льва Толстого</a></p>
+  </div>
+{% endblock %}
