@@ -1,6 +1,6 @@
+import os
 import shutil
 import tempfile
-import os
 
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -74,13 +74,13 @@ class PostPagesTest(TestCase):
             'group': self.group_1.id,
             'image': uploaded,
         }
-        response_POST = self.auth_client.post(
+        response_post = self.auth_client.post(
             reverse('posts:post_create'),
             data=form_data,
             follow=True
         )
         self.assertRedirects(
-            response_POST,
+            response_post,
             reverse(
                 'posts:profile',
                 kwargs={'username': 'simple_user'}
@@ -114,12 +114,12 @@ class PostPagesTest(TestCase):
             'group': self.group_1.id,
             'image': uploaded,
         }
-        response_POST = self.guest_client.post(
+        response_post = self.guest_client.post(
             reverse('posts:post_create'),
             data=form_data,
             follow=True
         )
-        self.assertRedirects(response_POST, '/auth/login/?next=/create/')
+        self.assertRedirects(response_post, '/auth/login/?next=/create/')
         self.assertEqual(Post.objects.count(), post_count_old)
         self.assertFalse(os.path.isfile('posts/post_create.gif'))
 
@@ -145,7 +145,7 @@ class PostPagesTest(TestCase):
             'text': '2 Тестовый setUpClass пост для редакции',
             'image': uploaded,
         }
-        response_POST = self.auth_author_post.post(
+        response_post = self.auth_author_post.post(
             reverse(
                 'posts:post_edit',
                 kwargs={'post_id': self.post_2.id}
@@ -153,7 +153,7 @@ class PostPagesTest(TestCase):
             data=form_data,
         )
         self.assertRedirects(
-            response_POST,
+            response_post,
             reverse(
                 'posts:post_detail',
                 kwargs={'post_id': self.post_2.id}
@@ -193,7 +193,7 @@ class PostPagesTest(TestCase):
         form_data = {
             'text': '1 Тестовый комментарий',
         }
-        response_POST = self.auth_client.post(
+        response_post = self.auth_client.post(
             reverse(
                 'posts:add_comment',
                 kwargs={'post_id': self.post_2.id}
@@ -202,14 +202,14 @@ class PostPagesTest(TestCase):
             follow=True,
         )
         self.assertRedirects(
-            response_POST,
+            response_post,
             reverse(
                 'posts:post_detail',
                 kwargs={'post_id': self.post_2.id}
             )
         )
         self.assertEqual(Post.objects.count(), post_count_old)
-        new_comment = response_POST.context['comments'][0]
+        new_comment = response_post.context['comments'][0]
         self.assertEqual(new_comment.text, '1 Тестовый комментарий')
         self.assertEqual(new_comment.post.id, self.post_2.id)
         self.assertEqual(new_comment.author.id, PostPagesTest.simple_user.id)
@@ -221,11 +221,11 @@ class PostPagesTest(TestCase):
         form_data = {
             'text': 'Новый коммент',
         }
-        response_POST = self.guest_client.post(
+        response_post = self.guest_client.post(
             reverse('posts:add_comment', kwargs={'post_id': self.post_2.id}),
             data=form_data,
             follow=True
         )
-        self.assertRedirects(response_POST,
+        self.assertRedirects(response_post,
                              '/auth/login/?next=%2Fposts%2F2%2Fcomment%2F')
         self.assertEqual(Post.objects.count(), post_count_old)

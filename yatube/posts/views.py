@@ -2,11 +2,11 @@ from typing import Any
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.cache import cache_page
 
 from .forms import CommentForm, PostForm
-from .models import Comment, Group, Post, User, Follow
+from .models import Follow, Group, Post, User
 from .utils import my_paginator
-from django.views.decorators.cache import cache_page
 
 CACHE_TIME: int = 3
 
@@ -45,11 +45,11 @@ def profile(request, username: str):
         'page_obj': page_obj,
         'author': author,
         'posts_count': posts_count,
+        'following':
+            request.user != author
+            and Follow.objects.filter(user=request.user.id,
+                                      author=author).exists(),
     }
-    if request.user in User.objects.all() and request.user != author:
-        context['following'] = Follow.objects.filter(
-            user=request.user,
-            author=author).exists()
     return render(request, 'posts/profile.html', context)
 
 
@@ -59,7 +59,7 @@ def post_detail(request, post_id: int):
     остальные пользователи могут только просматривать пост."""
     post = get_object_or_404(Post, id=post_id)
     posts_count = post.author.posts.count()
-    comments = Comment.objects.filter(post_id=post_id)
+    comments = post.comments.all()
     form = CommentForm(request.POST or None)
     context = {
         'posts_count': posts_count,
@@ -75,12 +75,11 @@ def post_create(request):
     """ Обработчик для страницы создания поста.
     Авторизованные пользователи через форму могут создать новый пост."""
     form = PostForm(request.POST or None, files=request.FILES or None)
-    if request.method == 'POST':
-        if form.is_valid():
-            new_post = form.save(commit=False)
-            new_post.author = request.user
-            new_post.save()
-            return redirect('posts:profile', request.user)
+    if request.method == 'POST' and form.is_valid():
+        new_post = form.save(commit=False)
+        new_post.author = request.user
+        new_post.save()
+        return redirect('posts:profile', request.user)
     return render(request, 'posts/create_post.html', {'form': form})
 
 
@@ -115,7 +114,7 @@ def add_comment(request, post_id):
     if form.is_valid():
         comment = form.save(commit=False)
         comment.author = request.user
-        comment.post = Post.objects.get(id=post_id)
+        comment.post = get_object_or_404(Post, id=post_id)
         comment.save()
     return redirect('posts:post_detail', post_id=post_id)
 
@@ -136,10 +135,10 @@ def follow_index(request):
 
 @login_required
 def profile_follow(request, username):
-    if request.user.username != username and Follow.objects.filter(
+    if request.user.username != username and not Follow.objects.filter(
         user=request.user,
         author=User.objects.get(username=username)
-    ).exists() is False:
+    ).exists():
         Follow.objects.create(
             user=request.user,
             author=User.objects.get(username=username)
@@ -149,14 +148,10 @@ def profile_follow(request, username):
 
 @login_required
 def profile_unfollow(request, username):
-    cond = Follow.objects.filter(
+    follow_req = Follow.objects.filter(
         user=request.user,
         author=User.objects.get(username=username)
-    ).exists()
-    if cond is True:
-        unfollow = Follow.objects.get(
-            user=request.user,
-            author=User.objects.get(username=username),
-        )
-        unfollow.delete()
+    )
+    if follow_req:
+        follow_req.delete()
     return redirect('posts:profile', username=username)

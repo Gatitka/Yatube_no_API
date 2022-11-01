@@ -1,6 +1,6 @@
+from core.models import CreatedModel
 from django.contrib.auth import get_user_model
 from django.db import models
-from core.models import CreatedModel
 
 User = get_user_model()
 
@@ -45,6 +45,7 @@ class Post(CreatedModel):
         'Картинка',
         upload_to='posts/',
         blank=True,
+        null=True,
         help_text='Можно добавить картинку'
     )
 
@@ -91,15 +92,15 @@ class Follow(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name='follower',
-        verbose_name='Пользователь'
-    )  # кто подписывается
+        verbose_name='Подписчик'
+    )
 
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='following',
-        verbose_name='Подписки'
-    )  # на кого подписывается
+        verbose_name='Автор'
+    )
 
     def __str__(self):
         return f'{self.user} -> {self.author}'
